@@ -21,4 +21,7 @@ abstract class DefaultScreen<T : BaseViewModel>(@LayoutRes private val layoutRes
     }
 
     override fun enableSwipeToRefresh(): Boolean = false
+
+    fun isTablet() = resources.getBoolean(R.bool.isTablet)
+
 }

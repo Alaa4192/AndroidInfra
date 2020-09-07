@@ -63,6 +63,7 @@ abstract class BaseBottomFragment<T : BaseViewModel>(@LayoutRes private val layo
                 UiState.SUCCESS -> onSuccess()
                 UiState.LOADING -> onLoading()
                 UiState.ERROR -> onError()
+                UiState.DONE -> onDone()
                 else -> onSuccess()
             }
         })
@@ -73,6 +74,8 @@ abstract class BaseBottomFragment<T : BaseViewModel>(@LayoutRes private val layo
     open fun onLoading() {}
 
     open fun onError() {}
+
+    open fun onDone() {}
 
 }
 

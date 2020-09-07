@@ -10,5 +10,5 @@ abstract class BaseViewModel : ViewModel() {
 }
 
 enum class UiState {
-    SUCCESS, LOADING, ERROR
+    SUCCESS, LOADING, ERROR, DONE
 }

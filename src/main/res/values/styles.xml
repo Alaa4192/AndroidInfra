@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar" />
+
     <style name="default_screen" parent="Theme.Design.Light.NoActionBar">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">false</item>
@@ -8,8 +10,9 @@
         <item name="android:windowBackground">#FFFFFF</item>
         <item name="toolbarStyle">@style/Widget.AppCompat.Toolbar</item>
         <item name="android:windowSoftInputMode">adjustResize</item>
-        <item name="statusBarBackground">#004A8E</item>
-        <item name="android:statusBarColor">#004A8E</item>
+        <item name="statusBarBackground">#FFFFFF</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="bottom_dialog" parent="Theme.Design.Light.NoActionBar">

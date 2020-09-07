@@ -1,9 +1,14 @@
 package com.infrastructure
 
+import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.Dialog
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.PorterDuff
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -14,6 +19,9 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.LayoutRes
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.appcompat.widget.AppCompatTextView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
@@ -28,6 +36,10 @@ import java.lang.reflect.ParameterizedType
 abstract class BaseFragment<T : BaseViewModel>(@LayoutRes private val layoutRes: Int) : DialogFragment(), BaseScreen {
     val viewModel by lazy { ViewModelProviders.of(this).get(getViewModelClass()) }
     lateinit var swipeToRefresh: SwipeRefreshLayout
+
+    companion object {
+        const val PERMISSION_REQUEST_CODE = 1
+    }
 
     private fun getViewModelClass(): Class<T> {
         return (javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as Class<T>
@@ -49,12 +61,17 @@ abstract class BaseFragment<T : BaseViewModel>(@LayoutRes private val layoutRes:
 
         back.showOrGone(showBackButton())
         back?.setOnClickListener { finish() }
+        getColorDrawable()?.let {
+            back?.imageTintMode = PorterDuff.Mode.SRC_IN
+            back?.imageTintList = ColorStateList.valueOf(it)
+        }
 
         initUi()
         initToolbarButtons()
         initViewModels()
 
         toolbarTitle.text = getName()
+        loadIndicator.setProgressColor(getProgressColor())
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -70,15 +87,17 @@ abstract class BaseFragment<T : BaseViewModel>(@LayoutRes private val layoutRes:
         return dialog
     }
 
-    fun onBackButtonPressed() {
+    protected fun onBackButtonPressed() {
         finish()
     }
-
-    abstract fun initUi()
 
     abstract fun getName(): String
 
     abstract fun enableSwipeToRefresh(): Boolean
+
+    abstract fun initUi()
+
+    open fun getProgressColor(): Int = R.color.colorPrimary
 
     open fun initViewModels() {
         viewModel.uiStateViewModel.observe(viewLifecycleOwner, Observer {
@@ -92,14 +111,22 @@ abstract class BaseFragment<T : BaseViewModel>(@LayoutRes private val layoutRes:
     }
 
     open fun onSuccess() {
+        loadIndicator.stop()
         progressContainer.gone()
     }
 
     open fun onLoading() {
+        loadIndicator.start()
         progressContainer.show()
     }
 
     open fun onError() {
+        loadIndicator.stop()
+        progressContainer.gone()
+    }
+
+    open fun onDone() {
+        loadIndicator.stop()
         progressContainer.gone()
     }
 
@@ -107,7 +134,20 @@ abstract class BaseFragment<T : BaseViewModel>(@LayoutRes private val layoutRes:
 
     open fun getActionButtons(): ArrayList<ActionButton>? = null
 
-    private fun initToolbarButtons() {
+    open fun getColorDrawable(): Int? = null
+
+    protected fun checkPermission(): Boolean {
+        return (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+    }
+
+    protected fun requestPermission() {
+        ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.CAMERA),
+                PERMISSION_REQUEST_CODE)
+    }
+
+    protected fun initToolbarButtons() {
         getActionButtons()?.forEach {
             when {
                 it.iconRes != null -> {
@@ -129,7 +169,7 @@ abstract class BaseFragment<T : BaseViewModel>(@LayoutRes private val layoutRes:
                     tv.setTextColor(Color.parseColor("#004A8E"))
                     tv.setOnClickListener(it.callback)
                     tv.setPaddingDp(5)
-                    tv.setMarginsDp(10)
+                    tv.setSidesMarginDp(10)
 
                     actionBarButtonsContainer.addView(tv)
                 }
@@ -137,13 +177,20 @@ abstract class BaseFragment<T : BaseViewModel>(@LayoutRes private val layoutRes:
         }
     }
 
-    fun getDrawable(@DrawableRes res: Int) = resources.getDrawable(res)
+    fun getDrawable(@DrawableRes res: Int) = ResourcesCompat.getDrawable(resources, res, null)
 
     fun finish() = activity?.finish()
 
     fun finishWithResult() {
         activity?.apply {
             setResult(RESULT_OK)
+            finish()
+        }
+    }
+
+    fun finishWithResult(data: Intent) {
+        activity?.apply {
+            setResult(RESULT_OK, data)
             finish()
         }
     }
@@ -157,6 +204,10 @@ abstract class BaseFragment<T : BaseViewModel>(@LayoutRes private val layoutRes:
     @Suppress("UNCHECKED_CAST")
     fun <T> getSerializableExtra(key: String): T? {
         return (activity?.intent?.getSerializableExtra(key) as? T)
+    }
+
+    fun getString(key: String): String? {
+        return activity?.intent?.getStringExtra(key)
     }
 }
 
